@@ -2,6 +2,7 @@ import sys
 import copy
 import json
 import ast
+import os
 
 from fastmcp import FastMCP
 import click
@@ -194,6 +195,11 @@ def _register_tools_with_filter(mcp: FastMCP, visible_tools_set: set, visible_to
 )
 def main(transport: str, port: int, host: str, services: str, headers_credential_only: bool, env: str, code_deploy: bool, extra_config: str, visible_tools: str):
     _setup_logging()
+    # FastMCP 3.x removed the host/port/stateless_http constructor arguments.
+    # host/port only applied to HTTP transports (stdio ignores them), and
+    # stateless HTTP is now carried by the FASTMCP_STATELESS_HTTP environment
+    # variable, which must be set before FastMCP() reads its settings.
+    os.environ.setdefault("FASTMCP_STATELESS_HTTP", "true")
     # Create an MCP server
     mcp = FastMCP(
         name="alibaba-cloud-ops-mcp-server",
@@ -256,9 +262,6 @@ def main(transport: str, port: int, host: str, services: str, headers_credential
                      "tar -xzf app.tar.gz && nohup python app.py > /root/app.log 2>&1 &"
                    说明：使用 nohup 命令可以让程序在后台运行，即使终端关闭也不会终止；> 重定向标准输出到日志文件；2>&1 将标准错误也重定向到同一文件；& 符号让命令在后台执行。
                 4. 应用和应用分组会自动检查是否存在，如果存在则跳过创建，避免重复创建错误。''',
-        port=port,
-        host=host,
-        stateless_http=True
     )
     if headers_credential_only:
         settings.headers_credential_only = headers_credential_only
